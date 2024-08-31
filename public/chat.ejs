@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chat Application</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
+    <style>
+        body {
+            background-color: #f8f9fa;
+        }
+        .chat-box {
+            height: 400px;
+            overflow-y: scroll;
+            padding: 15px;
+            background-color: #f1f1f1;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+        .chat-message {
+            margin-bottom: 20px;
+            display: flex;
+            align-items: flex-end;
+        }
+        .chat-message img {
+            width: 45px;
+            height: 45px;
+            border-radius: 50%;
+            margin-right: 10px;
+        }
+        .chat-message .message {
+            max-width: 75%;
+            padding: 10px 15px;
+            border-radius: 20px;
+            position: relative;
+        }
+        .chat-message .message.sent {
+            background-color: #dcf8c6;
+            margin-left: auto;
+            border-bottom-right-radius: 5px;
+        }
+        .chat-message .message.received {
+            background-color: #ffffff;
+            border-bottom-left-radius: 5px;
+        }
+        .chat-message .message.sent::before,
+        .chat-message .message.received::before {
+            content: "";
+            position: absolute;
+            bottom: 0;
+            width: 0;
+            height: 0;
+            border: 10px solid transparent;
+        }
+        .chat-message .message.sent::before {
+            right: -20px;
+            border-left-color: #dcf8c6;
+        }
+        .chat-message .message.received::before {
+            left: -20px;
+            border-right-color: #ffffff;
+        }
+        .chat-input {
+            background-color: #ffffff;
+            padding: 10px;
+            border-top: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        .logout-button {
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container mt-5">
+        <div class="row justify-content-center">
+            <div class="col-md-4">
+                <!-- Greeting and Logged-in Username -->
+                <div class="mb-4">
+                    <h5>Welcome, <%= username %>!</h5>
+
+                </div>
+
+                <!-- Room Controls -->
+                <div class="room-controls">
+                    <button class="btn btn-primary mb-2" data-bs-toggle="modal" data-bs-target="#createRoomModal">Create Room</button>
+                    <button class="btn btn-success mb-2" data-bs-toggle="modal" data-bs-target="#joinRoomModal">Join Room</button>
+                </div>
+                
+                <!-- Online Users -->
+                <div class="online-users">
+                    <h5>Online Users</h5>
+                    <div id="users"></div>
+                </div>
+
+                <!-- Logout Button -->
+                <div class="logout-button">
+                    <form id="logoutForm" method="POST" action="/logout">
+                        <button class="btn btn-danger w-100" type="submit">Logout</button>
+                    </form>
+                </div>
+            </div>
+            <div class="col-md-8">
+                <!-- Chat Box -->
+                <div class="card">
+                    <div class="card-header bg-primary text-white">
+                        <h4 class="mb-0">Chat Application</h4>
+                    </div>
+                    <div class="card-body chat-box">
+                        <!-- Chat messages go here -->
+                    </div>
+                    <div class="card-footer chat-input">
+                        <!-- Hidden input to store the current room ID -->
+                        <input type="hidden" id="currentRoom">
+                        <div class="input-group">
+                            <input id="messageInput" type="text" class="form-control" placeholder="Type a message">
+                            <button id="sendButton" class="btn btn-primary" type="button">
+                                <i class="fas fa-paper-plane"></i> Send
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Create Room Modal -->
+    <div class="modal fade" id="createRoomModal" tabindex="-1" aria-labelledby="createRoomModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="createRoomModalLabel">Create a Room</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="createRoomForm">
+                        <div class="mb-3">
+                            <label for="roomIdInput" class="form-label">Room ID</label>
+                            <input id="roomIdInput" type="text" class="form-control" placeholder="Room ID" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="roomNameInput" class="form-label">Room Name</label>
+                            <input id="roomNameInput" type="text" class="form-control" placeholder="Room Name" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="roomPasswordInput" class="form-label">Room Password</label>
+                            <input id="roomPasswordInput" type="password" class="form-control" placeholder="Room Password">
+                        </div>
+                        <button class="btn btn-primary w-100" type="submit">Create Room</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Join Room Modal -->
+    <div class="modal fade" id="joinRoomModal" tabindex="-1" aria-labelledby="joinRoomModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="joinRoomModalLabel">Join a Room</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="joinRoomForm">
+                        <div class="mb-3">
+                            <label for="joinRoomIdInput" class="form-label">Room ID</label>
+                            <input id="joinRoomIdInput" type="text" class="form-control" placeholder="Room ID" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="joinPasswordInput" class="form-label">Room Password</label>
+                            <input id="joinPasswordInput" type="password" class="form-control" placeholder="Room Password">
+                        </div>
+                        <button class="btn btn-success w-100" type="submit">Join Room</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.socket.io/4.0.0/socket.io.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const socket = io();
+
+            // Function to append messages to the chat box
+            function appendMessage(user, msg, type, timestamp) {
+                const chatBox = document.querySelector('.chat-box');
+                const messageElement = document.createElement('div');
+                messageElement.classList.add('chat-message');
+                
+                const imgElement = document.createElement('img');
+                imgElement.src = `https://placehold.co/45x45`;  // Replace with user's profile picture URL if available
+                imgElement.alt = `Profile picture of ${user}`;
+                
+                const messageContent = document.createElement('div');
+                messageContent.classList.add('message', type);
+                messageContent.innerHTML = `<p><strong>${user}</strong> <small>${timestamp}</small></p><p>${msg}</p>`;
+                
+                messageElement.appendChild(imgElement);
+                messageElement.appendChild(messageContent);
+                
+                chatBox.appendChild(messageElement);
+                chatBox.scrollTop = chatBox.scrollHeight;
+            }
+            // Handle incoming messages
+            socket.on('receive_message', (data) => {
+                appendMessage(data.user, data.msg, 'received', data.timestamp);
+            });
+            // Handle status updates
+            socket.on('status', (data) => {
+                appendMessage('System', data.msg, 'received', '');
+            });
+            // Handle room creation feedback
+            socket.on('room_created', (data) => {
+                if (data.success) {
+                    appendMessage('System', `Room "${data.room_name}" created with ID "${data.room_id}".`, 'received', '');
+                } else {
+                    alert('Room creation failed. Please try again.');
+                }
+            });
+
+
+
+            // Handle successful room join
+            socket.on('room_joined', (data) => {
+                document.getElementById('currentRoom').value = data.room_id; // Set the current room ID
+                appendMessage('System', `You have joined the room "${data.room_id}".`, 'sent', '');
+            });
+
+            // Update list of online users
+            socket.on('update_users', (data) => {
+                const usersList = document.getElementById('users');
+                usersList.innerHTML = '';
+                data.users.forEach(user => {
+                    const userElement = document.createElement('p');
+                    userElement.textContent = user;
+                    usersList.appendChild(userElement);
+                });
+            });
+
+            // Handle sending messages
+            document.getElementById('sendButton').addEventListener('click', () => {
+                const messageInput = document.getElementById('messageInput');
+                const message = messageInput.value.trim();
+                const room_id = document.getElementById('currentRoom').value;
+                if (room_id === "") {
+                    alert('Please join a room before sending messages.');
+                } else if (message && room_id) {
+                    socket.emit('send_message', { room_id, message });
+                    const timestamp = new Date().toISOString().replace('T', ' ').substr(0, 19);
+                    appendMessage('You', message, 'sent', timestamp);
+                    messageInput.value = '';
+                }
+            });
+
+            // Handle room creation
+            document.getElementById('createRoomForm').addEventListener('submit', (e) => {
+                e.preventDefault();
+                const roomId = document.getElementById('roomIdInput').value.trim();
+                const roomName = document.getElementById('roomNameInput').value.trim();
+                const roomPassword = document.getElementById('roomPasswordInput').value.trim();
+                if (roomId && roomName) {
+                    socket.emit('create_room', { room_id: roomId, room_name: roomName, room_password: roomPassword });
+                    document.getElementById('roomIdInput').value = '';
+                    document.getElementById('roomNameInput').value = '';
+                    document.getElementById('roomPasswordInput').value = '';
+                }
+            });
+
+            // Handle room joining
+            document.getElementById('joinRoomForm').addEventListener('submit', (e) => {
+                e.preventDefault();
+                const roomId = document.getElementById('joinRoomIdInput').value.trim();
+                const roomPassword = document.getElementById('joinPasswordInput').value.trim();
+                if (roomId) {
+                    socket.emit('join_room', { room_id: roomId, password: roomPassword });
+                    document.getElementById('joinRoomIdInput').value = '';
+                    document.getElementById('joinPasswordInput').value = '';
+                }
+            });
+        });
+    </script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+          const username = "<%= username %>";  // Assuming you use a templating engine
+          document.getElementById('usernameDisplay').textContent = username;
+        });
+      </script>
+      
+</body>
+</html>
+
