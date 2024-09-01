@@ -42,7 +42,7 @@ io.use(sharedSession(sessionMiddleware, {
 }));
 
 const db = mysql.createConnection({
-  host: "127.0.0.1",
+  host: "192.168.0.244",
   user: 'root',
   password: 'a@@@@@@@@@@',
   database: 'chatlogin'
